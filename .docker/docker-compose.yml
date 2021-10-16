@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+
+  php:
+    container_name: PHP
+    build:
+      context: ./..
+      dockerfile: ./.docker/php/Dockerfile
+    working_dir: /srv
+    volumes:
+      - ./../:/srv:delegated
