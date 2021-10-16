@@ -24,6 +24,7 @@ class AnalyseCommand extends Command
 		parent::__construct('analyse');
 		$this->addArgument('path', InputArgument::REQUIRED);
 		$this->addOption('config', null, InputOption::VALUE_REQUIRED);
+		$this->addOption('temp', null, InputOption::VALUE_REQUIRED);
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
