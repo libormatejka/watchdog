@@ -2,8 +2,8 @@
 
 namespace Finie\Watchdog\Command;
 
-use Finie\StructureChecker\Rules\RuleInterface;
-use Nette\Configurator;
+use Finie\Watchdog\Rules\RuleInterface;
+use Nette\Bootstrap\Configurator;
 use Nette\Neon\Neon;
 use Nette\Utils\Finder;
 use Nette\Utils\Strings;
@@ -42,6 +42,7 @@ class AnalyseCommand extends Command
 			$temp = (string) $input->getOption('temp');
 
 			$configurator = new Configurator();
+			$configurator->defaultExtensions = [];
 			$configurator->setTempDirectory($temp);
 			$configurator->addConfig($config);
 			$container = $configurator->createContainer();
