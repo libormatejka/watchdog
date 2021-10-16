@@ -1,4 +1,21 @@
 {
   "name": "finie/watchdog",
-  "type": "library"
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Finie\\Watchdog\\": "src"
+    }
+  },
+  "require": {
+    "php": "^8.0.3",
+    "nette/utils": "^3.0.3",
+    "nette/finder": "^2.5.2",
+    "symfony/console": "^5.0.5",
+    "symfony/yaml": "^5.0.5",
+    "nette/di": "^3.0.1",
+    "nette/bootstrap": "^3.0.1"
+  },
+  "bin": [
+    "bin/watchdog"
+  ]
 }
