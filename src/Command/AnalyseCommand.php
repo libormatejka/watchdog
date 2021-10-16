@@ -4,6 +4,7 @@ namespace Finie\Watchdog\Command;
 
 use Finie\Watchdog\Bootstrap;
 use Finie\StructureChecker\Rules\RuleInterface;
+use Nette\Bootstrap\Configurator;
 use Nette\Neon\Neon;
 use Nette\Utils\Finder;
 use Nette\Utils\Strings;
@@ -38,7 +39,10 @@ class AnalyseCommand extends Command
 			$config = (string) $input->getOption('config');
 			$config = Neon::decode(file_get_contents($config));
 
-			$configurator = Bootstrap::boot();
+			$temp = (string) $input->getOption('temp');
+
+			$configurator = new Configurator();
+			$configurator->setTempDirectory($temp);
 			$configurator->addConfig($config);
 			$container = $configurator->createContainer();
 			$keys = $container->findByType(RuleInterface::class);
