@@ -2,65 +2,23 @@
 
 namespace Finie\Watchdog\Rules;
 
+use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class RuleJson extends Command
+class RuleJson implements RuleInterface
 {
-	/** @var array<mixed, mixed> */
-	protected array $config = [];
-
-	/**
-	 * @param array<mixed, mixed> $config
-	 */
-	public function __construct(array $config)
+	public function getPathPatterns(): array
 	{
-		parent::__construct();
-		$this->config = $config;
+
+		return [];
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output): int
+	public function processFile(SplFileInfo $file): array
 	{
-		$io = new SymfonyStyle($input, $output);
-
-		$jsonFolders = $this->config['parameters']['folders']['json'] ?? [];
-
-		if (!empty($jsonFolders)) {
-			$io->section('JSONs');
-		}
-
-		foreach( $jsonFolders as $jsonFolder){
-
-			if (is_dir($jsonFolder)) {
-
-				if ($dh = opendir($jsonFolder)) {
-					while (($file = readdir($dh)) !== false) {
-
-						if($file != "." && $file != ".."){
-
-							if( strpos($file, ".json") !== false){
-
-								if($this->isJson(file_get_contents($jsonFolder."/".$file)) === FALSE){
-									$io->error('Filename: '.$file);
-								}else{
-									print('[OK] Filename: '.$file);
-								}
-
-								$io->newLine();
-
-							}
-						}
-					}
-					closedir($dh);
-				}
-			}
-		}
-
-
-
-		return 0;
+		return [];
 	}
 
 	public static function isJson($string) {

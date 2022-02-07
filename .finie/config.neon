@@ -1,7 +1,0 @@
-parameters:
-	folders:
-		json:
-			- src/test/json
-			- src/test/json2
-			- src/test/json3
-			- src/test/json4
