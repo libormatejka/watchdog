@@ -2,12 +2,10 @@
 
 namespace Finie\Watchdog\Command;
 
-use Nette\Neon\Neon;
 use Nette\Utils\Finder;
 use Nette\Utils\Strings;
 use Finie\Watchdog\Rules\RuleJson;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,6 +22,10 @@ class AnalyseCommand extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
+
+		// Default rules
+		$rules = [new RuleJson()];
+
 		$output = new SymfonyStyle($input, $output);
 		$output->title('Finie Watchdog');
 		$output->writeln('Analysing...');
@@ -35,7 +37,13 @@ class AnalyseCommand extends Command
 			return 1;
 		}
 
+
 		foreach( $paths as $path ){
+
+			if( !is_dir($path) ){
+				$output->error('Folder not exists!');
+				return 1;
+			}
 
 			$output->section("Folder: " . $path);
 			$finder = Finder::findFiles()
@@ -46,9 +54,50 @@ class AnalyseCommand extends Command
 
 			foreach ($finder as $file) {
 
-				$rule = (new RuleJson)->processFile($file);
-				$output->write('<error>F</error>');
+				// Match rules
+				$matchedRules = [];
+
+				foreach ($rules as $rule) {
+					print_r($file);
+					foreach ($rule->getPathPatterns() as $pattern) {
+
+						if (Strings::match((string) $file, $pattern) !== null) {
+							$matchedRules[] = $rule;
+							break;
+						}
+					}
+				}
+
+				// Analyse
+				$fileViolations = [];
+				foreach ($matchedRules as $rule) {
+					$fileViolations = $fileViolations + $rule->processFile($file);
+				}
+
+				print_r( $matchedRules );
+
+
+
+
 			}
+
+
+
+			/*
+
+			foreach ($finder as $file) {
+
+				$rule = (new RuleJson)->processFile($file);
+
+				if($rule === true ){
+
+					$output->write('<info>'.$file . '</info>');
+
+				}else{
+					$output->write('<error>'.$file . '</error>');
+				}
+
+			}*/
 
 		}
 
