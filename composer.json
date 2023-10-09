@@ -1,9 +1,9 @@
 {
-  "name": "finie/watchdog",
+  "name": "libormatejka/watchdog",
   "type": "library",
   "autoload": {
     "psr-4": {
-      "Finie\\Watchdog\\": "src"
+      "Libormatejka\\Watchdog\\": "src"
     }
   },
   "require": {

@@ -1,10 +1,10 @@
 <?php declare(strict_types = 1);
 
-namespace Finie\Watchdog\Command;
+namespace Libormatejka\Watchdog\Command;
 
 use Nette\Utils\Finder;
 use Nette\Utils\Strings;
-use Finie\Watchdog\Rules\RuleJson;
+use Libormatejka\Watchdog\Rules\RuleJson;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
@@ -22,21 +22,24 @@ class AnalyseCommand extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
-
-		// Default rules
+		// Nadefinuje pravidla
 		$rules = [new RuleJson()];
-
 		$output = new SymfonyStyle($input, $output);
-		$output->title('Finie Watchdog');
-		$output->writeln('Analysing...');
+		$output->title('Watchdog');
 
+		// Cesta k adresarum
 		$paths = (array) $input->getArgument('path');
 
+		// Kontrola, jestli je path nastaven.
 		if( empty($paths) ){
-			$output->error('Folder not specified!');
+			$output->error('Folder is not specified!');
 			return 1;
 		}
 
+		$output->writeln('Analyzing folders:');
+		foreach($paths as $path){
+			$output->writeln(" - " . $path);
+		}
 
 		foreach( $paths as $path ){
 
@@ -45,11 +48,10 @@ class AnalyseCommand extends Command
 				return 1;
 			}
 
-			$output->section("Folder: " . $path);
 			$finder = Finder::findFiles()
 				->from($path);
-			$output->writeln($finder->count() . ' files');
 
+			$output->section("Folder: " . $path . " (". $finder->count() ." files )");
 			$errors = [];
 
 			foreach ($finder as $file) {
@@ -58,14 +60,13 @@ class AnalyseCommand extends Command
 				$matchedRules = [];
 
 				foreach ($rules as $rule) {
-					print_r($file);
-					foreach ($rule->getPathPatterns() as $pattern) {
-
+					//print_r($rule);
+					/*foreach ($rule->getPathPatterns() as $pattern) {
 						if (Strings::match((string) $file, $pattern) !== null) {
 							$matchedRules[] = $rule;
 							break;
 						}
-					}
+					}*/
 				}
 
 				// Analyse
@@ -74,11 +75,8 @@ class AnalyseCommand extends Command
 					$fileViolations = $fileViolations + $rule->processFile($file);
 				}
 
-				print_r( $matchedRules );
-
-
-
-
+				//print_r( $matchedRules );
+				$output->writeln('<info>' . $file . ' ✔ </info>');
 			}
 
 
