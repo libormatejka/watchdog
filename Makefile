@@ -1,6 +1,9 @@
 # Exec sh on php container
 init:
-	docker-compose -f .docker/docker-compose.yml run php composer install;
+	docker-compose -f .docker/docker-compose.yml run php composer install
+
+up:
+	docker-compose -f .docker/docker-compose.yml run php sh
 
 analyse:
-	docker-compose -f .docker/docker-compose.yml run php bin/watchdog analyse test
+	docker-compose -f .docker/docker-compose.yml run php bin/watchdog analyse app app2 --config=./config/watchdog.neon

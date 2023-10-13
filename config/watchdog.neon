@@ -1,0 +1,13 @@
+parameters:
+	includes:
+		- tests
+		- tests2
+	excludes:
+		- .idea
+		- .git
+		- .docker
+		- log
+		- node_modules
+		- temp
+		- vendor
+		- app2

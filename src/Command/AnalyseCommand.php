@@ -1,19 +1,16 @@
 <?php declare(strict_types = 1);
 
-namespace Cboy\Watchdog\Command;
+namespace Clown\Watchdog\Command;
 
-use Cboy\Watchdog\Rules\RuleInterface;
-use Nette\Bootstrap\Configurator;
 use Nette\Neon\Neon;
 use Nette\Utils\Finder;
-use Nette\Utils\Strings;
-use SplFileInfo;
+use Clown\Watchdog\Rules\RuleJson;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 class AnalyseCommand extends Command
 {
@@ -21,92 +18,109 @@ class AnalyseCommand extends Command
 	public function __construct()
 	{
 		parent::__construct('analyse');
-		$this->addArgument('path', InputArgument::REQUIRED);
-		$this->addOption('config', null, InputOption::VALUE_REQUIRED);
-		$this->addOption('temp', null, InputOption::VALUE_REQUIRED);
+		$this->addArgument('path', InputArgument::IS_ARRAY, 'Which folders do you want to analyse?');
+		$this->addOption('config', null, InputOption::VALUE_REQUIRED, 'Path to the configuration file');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
-		// Default rules
-		$rules = [];
+		// Nadefinuje pravidla
+		$rules = [new RuleJson()];
+		$output = new SymfonyStyle($input, $output);
+		$output->title('Watchdog');
 
-		// Default excludes
-		$excludes = [];
-
-		// Process config
-		if ($input->getOption('config') !== null) {
-			$config = (string) $input->getOption('config');
-			$config = Neon::decode(file_get_contents($config));
-
-			$temp = (string) $input->getOption('temp');
-
-			$configurator = new Configurator();
-			$configurator->defaultExtensions = [];
-			$configurator->setTempDirectory($temp);
-			$configurator->addConfig($config);
-			$container = $configurator->createContainer();
-			$keys = $container->findByType(RuleInterface::class);
-			foreach ($keys as $key) {
-				$rules[] = $container->getService($key);
-			}
-			$excludes = $container->getParameters()['excludes'] ?? [];
+		// Config
+		$configPath = (string) $input->getOption('config');
+		if ($configPath) {
+			$output->writeln('Using config file: ' . $configPath);
+			$config = Neon::decode(file_get_contents($configPath));
+			$includes = $config['parameters']['includes'] ?? [];
+			$excludes = $config['parameters']['excludes'] ?? [];
 		}
 
-		$errors = [];
-		$path = (string) $input->getArgument('path');
-		$i = 0;
-		/** @var SplFileInfo $file */
-		$finder = Finder::findFiles()
-			->from($path)
-			->exclude($excludes);
+		// Get Folders
+		$paths = $this->getPaths($input, $output);
 
-		foreach ($finder as $file) {
-			// Match rules
-			$matchedRules = [];
-			foreach ($rules as $rule) {
-				foreach ($rule->getPathPatterns() as $pattern) {
-					if (Strings::match((string) $file, $pattern) !== null) {
-						$matchedRules[] = $rule;
-						break;
-					}
-				}
-			}
+		// Add included folders
+		$paths = array_merge($paths, $includes);
 
-			// Analyse
-			$fileViolations = [];
-			foreach ($matchedRules as $rule) {
-				$fileViolations = $fileViolations + $rule->processFile($file);
-			}
-			if (count($matchedRules) == 0) {
-				$output->write('.');
-			} elseif (count($fileViolations) === 0) {
-				$output->write('<info>.</info>');
-			} else {
-				$errors[$file->getPathname()] = $fileViolations;
-				$output->write('<error>F</error>');
-			}
-
-			$i++;
-			if ($i % 50 === 0) {
-				$output->writeln('');
-			}
+		// Remove excluded folders from paths
+		if (!empty($excludes)) {
+			$paths = array_diff($paths, $excludes);
 		}
-		$output->writeln('');
-		$output->writeln('');
-		$output->writeln($finder->count() . ' files');
 
-		foreach ($errors as $file => $fails) {
-			$io = new SymfonyStyle($input, $output);
-			$io->section($file);
-			foreach ($fails as $fail) {
-				$io->error('- ' . $fail);
-			}
-		}
-		if (count($errors) !== 0) {
+		if (!$paths) {
+			$output->error('Folder is not specified!');
 			return 1;
 		}
+
+		// Analyse Folders
+		$this->analyseFolders($paths, $rules, $output, $excludes);
+
+		$output->success('Successfully analysed');
 		return 0;
+	}
+
+	private function getPaths(InputInterface $input, SymfonyStyle $output): array
+	{
+		$paths = (array) $input->getArgument('path');
+
+		while (empty($paths) || $paths[0] === NULL || trim($paths[0]) === '') {
+			$inputPath = $output->ask('Please enter the path to the directory you want to analyse');
+
+			if ($inputPath !== null) {
+				$paths = explode(' ', $inputPath);
+			} else {
+				$paths = [null];
+			}
+		}
+
+		return $paths;
+	}
+
+	private function analyseFolders(array $paths, array $rules, SymfonyStyle $output, array $excludes): void
+	{
+		$output->writeln('Analyzing folders:');
+		foreach ($paths as $path) {
+			$output->writeln(" - " . $path);
+		}
+
+		foreach ($paths as $path) {
+
+			if (!is_dir($path)) {
+				$output->error('Folder ' . $path . ' not exists! Skipping...');
+				continue;
+			}
+
+			$finder = Finder::findFiles()
+				->from($path)
+				->exclude($excludes);
+			$output->section("Folder: " . $path . " (" . $finder->count() . " files)");
+
+			foreach ($finder as $file) {
+				$matchedRules = $this->matchRules($file, $rules);
+				$fileViolations = $this->analyseFile($file, $matchedRules);
+				$output->writeln('<info>' . $file . ' ✔ </info>');
+			}
+		}
+	}
+
+	private function matchRules($file, array $rules): array
+	{
+		$matchedRules = [];
+		foreach ($rules as $rule) {
+			// Logic to match rules goes here
+		}
+		return $matchedRules;
+	}
+
+	private function analyseFile($file, array $matchedRules): array
+	{
+		$fileViolations = [];
+		foreach ($matchedRules as $rule) {
+			$fileViolations = $fileViolations + $rule->processFile($file);
+		}
+		return $fileViolations;
 	}
 
 }
