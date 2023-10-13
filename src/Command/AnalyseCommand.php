@@ -28,91 +28,14 @@ class AnalyseCommand extends Command
 
 		$paths = $this->getPaths($input, $output);
 
-		// Cesta k adresarum z argumentu prikazu
-		$paths = (array) $input->getArgument('path');
-
-		// Kontrola, jestli je path nastaven. Pokud není, dostane dialogovou vyzvu.
-		while (empty($paths) || ($paths[0] === NULL)) {
-			$inputPath = $output->ask('Prosím, zadejte cestu k adresáři, který chcete analyzovat');
-			$paths = explode(' ', $inputPath);
-		}
-
-		// Pokud i tak není nastaven adresar, tak se ukonci
-		if( empty($paths) or ($paths[0] === NULL) ){
+		if (!$paths) {
 			$output->error('Folder is not specified!');
 			return 1;
 		}
 
-		// Vypise se seznam adresaru, ktere se budou kontrolovat
-		$output->writeln('Analyzing folders:');
-		foreach($paths as $path){
-			$output->writeln(" - " . $path);
-		}
+		$this->analyseFolders($paths, $rules, $output);
 
-		// projde seznam souboru v adresari
-		foreach( $paths as $path ){
-
-			if( !is_dir($path) ){
-				$output->error('Folder not exists!');
-				return 1;
-			}
-
-			$finder = Finder::findFiles()
-				->from($path);
-
-			$output->section("Folder: " . $path . " (". $finder->count() ." files )");
-			$errors = [];
-
-			foreach ($finder as $file) {
-
-				// Match rules
-				$matchedRules = [];
-
-				foreach ($rules as $rule) {
-					//print_r($rule);
-					/*foreach ($rule->getPathPatterns() as $pattern) {
-						if (Strings::match((string) $file, $pattern) !== null) {
-							$matchedRules[] = $rule;
-							break;
-						}
-					}*/
-				}
-
-				// Analyse
-				$fileViolations = [];
-				foreach ($matchedRules as $rule) {
-					$fileViolations = $fileViolations + $rule->processFile($file);
-				}
-
-				//print_r( $matchedRules );
-				$output->writeln('<info>' . $file . ' ✔ </info>');
-			}
-
-
-
-			/*
-
-			foreach ($finder as $file) {
-
-				$rule = (new RuleJson)->processFile($file);
-
-				if($rule === true ){
-
-					$output->write('<info>'.$file . '</info>');
-
-				}else{
-					$output->write('<error>'.$file . '</error>');
-				}
-
-			}*/
-
-		}
-
-		if( $errors){
-
-		}
-
-		$output->success('Successfuly analysed');
+		$output->success('Successfully analysed');
 		return 0;
 	}
 
@@ -120,12 +43,57 @@ class AnalyseCommand extends Command
 	{
 		$paths = (array) $input->getArgument('path');
 
-		while (empty($paths) || $paths[0] === NULL) {
+		while (empty($paths) || $paths[0] === NULL || trim($paths[0]) === '') {
 			$inputPath = $output->ask('Prosím, zadejte cestu k adresáři, který chcete analyzovat');
-			$paths = explode(' ', $inputPath);
+
+			if ($inputPath !== null) {
+				$paths = explode(' ', $inputPath);
+			} else {
+				$paths = [null]; // Reset paths to ensure the loop continues
+			}
 		}
 
 		return $paths;
+	}
+
+	private function analyseFolders(array $paths, array $rules, SymfonyStyle $output): void
+	{
+		$output->writeln('Analyzing folders:');
+		foreach ($paths as $path) {
+			$output->writeln(" - " . $path);
+
+			if (!is_dir($path)) {
+				$output->error('Folder not exists!');
+				return;
+			}
+
+			$finder = Finder::findFiles()->from($path);
+			$output->section("Folder: " . $path . " (" . $finder->count() . " files)");
+
+			foreach ($finder as $file) {
+				$matchedRules = $this->matchRules($file, $rules);
+				$fileViolations = $this->analyseFile($file, $matchedRules);
+				$output->writeln('<info>' . $file . ' ✔ </info>');
+			}
+		}
+	}
+
+	private function matchRules($file, array $rules): array
+	{
+		$matchedRules = [];
+		foreach ($rules as $rule) {
+			// Logic to match rules goes here
+		}
+		return $matchedRules;
+	}
+
+	private function analyseFile($file, array $matchedRules): array
+	{
+		$fileViolations = [];
+		foreach ($matchedRules as $rule) {
+			$fileViolations = $fileViolations + $rule->processFile($file);
+		}
+		return $fileViolations;
 	}
 
 }
