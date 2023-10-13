@@ -61,10 +61,13 @@ class AnalyseCommand extends Command
 		$output->writeln('Analyzing folders:');
 		foreach ($paths as $path) {
 			$output->writeln(" - " . $path);
+		}
+
+		foreach ($paths as $path) {
 
 			if (!is_dir($path)) {
-				$output->error('Folder not exists!');
-				return;
+				$output->error('Folder ' . $path . ' not exists! Skipping...');
+				continue;
 			}
 
 			$finder = Finder::findFiles()->from($path);
