@@ -3,7 +3,6 @@
 namespace Libormatejka\Watchdog\Command;
 
 use Nette\Utils\Finder;
-use Nette\Utils\Strings;
 use Libormatejka\Watchdog\Rules\RuleJson;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -27,20 +26,30 @@ class AnalyseCommand extends Command
 		$output = new SymfonyStyle($input, $output);
 		$output->title('Watchdog');
 
-		// Cesta k adresarum
+		$paths = $this->getPaths($input, $output);
+
+		// Cesta k adresarum z argumentu prikazu
 		$paths = (array) $input->getArgument('path');
 
-		// Kontrola, jestli je path nastaven.
-		if( empty($paths) ){
+		// Kontrola, jestli je path nastaven. Pokud není, dostane dialogovou vyzvu.
+		while (empty($paths) || ($paths[0] === NULL)) {
+			$inputPath = $output->ask('Prosím, zadejte cestu k adresáři, který chcete analyzovat');
+			$paths = explode(' ', $inputPath);
+		}
+
+		// Pokud i tak není nastaven adresar, tak se ukonci
+		if( empty($paths) or ($paths[0] === NULL) ){
 			$output->error('Folder is not specified!');
 			return 1;
 		}
 
+		// Vypise se seznam adresaru, ktere se budou kontrolovat
 		$output->writeln('Analyzing folders:');
 		foreach($paths as $path){
 			$output->writeln(" - " . $path);
 		}
 
+		// projde seznam souboru v adresari
 		foreach( $paths as $path ){
 
 			if( !is_dir($path) ){
@@ -105,6 +114,18 @@ class AnalyseCommand extends Command
 
 		$output->success('Successfuly analysed');
 		return 0;
+	}
+
+	private function getPaths(InputInterface $input, SymfonyStyle $output): array
+	{
+		$paths = (array) $input->getArgument('path');
+
+		while (empty($paths) || $paths[0] === NULL) {
+			$inputPath = $output->ask('Prosím, zadejte cestu k adresáři, který chcete analyzovat');
+			$paths = explode(' ', $inputPath);
+		}
+
+		return $paths;
 	}
 
 }
