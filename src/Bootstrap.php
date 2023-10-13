@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace Libormatejka\Watchdog;
+namespace Clown\Watchdog;
 
 use Nette\Configurator;
 

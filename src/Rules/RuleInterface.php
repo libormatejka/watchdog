@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace Libormatejka\Watchdog\Rules;
+namespace Clown\Watchdog\Rules;
 
 use SplFileInfo;
 

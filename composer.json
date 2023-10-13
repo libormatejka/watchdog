@@ -1,9 +1,9 @@
 {
-  "name": "libormatejka/watchdog",
+  "name": "clown/watchdog",
   "type": "library",
   "autoload": {
     "psr-4": {
-      "Libormatejka\\Watchdog\\": "src"
+      "Clown\\Watchdog\\": "src"
     }
   },
   "require": {
