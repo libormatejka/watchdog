@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace Finie\Watchdog\Command;
+namespace Cboy\Watchdog\Command;
 
-use Finie\Watchdog\Rules\RuleInterface;
+use Cboy\Watchdog\Rules\RuleInterface;
 use Nette\Bootstrap\Configurator;
 use Nette\Neon\Neon;
 use Nette\Utils\Finder;

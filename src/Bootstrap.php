@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace Finie\Watchdog;
+namespace Cboy\Watchdog;
 
 use Nette\Configurator;
 

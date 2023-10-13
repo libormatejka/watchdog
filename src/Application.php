@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace Finie\Watchdog;
+namespace Cboy\Watchdog;
 
-use Finie\Watchdog\Command\AnalyseCommand;
+use Cboy\Watchdog\Command\AnalyseCommand;
 use Symfony\Component\Console\Application as SymfonyApplication;
 
 class Application extends SymfonyApplication

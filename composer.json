@@ -1,10 +1,10 @@
 {
-  "name": "libormatejka/watchdog",
+  "name": "cboy/watchdog",
   "type": "library",
   "license": "MIT",
   "autoload": {
     "psr-4": {
-      "libormatejka\\Watchdog\\": "src"
+      "Cboy\\Watchdog\\": "src"
     }
   },
   "require": {
