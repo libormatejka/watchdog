@@ -25,8 +25,6 @@ class AnalyseCommand extends Command
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
-		// Nadefinuje pravidla
-		$rules[] = new JsonValidationRule();
 		$output = new SymfonyStyle($input, $output);
 		$output->title('Watchdog');
 
@@ -37,6 +35,18 @@ class AnalyseCommand extends Command
 			$config = Neon::decode(file_get_contents($configPath));
 			$includes = $config['parameters']['includes'] ?? [];
 			$excludes = $config['parameters']['excludes'] ?? [];
+			$enabledRules = $config['parameters']['enabledRules'] ?? [];
+		}
+
+		// Nadefinuje pravidla
+		$rules = [];
+		if (in_array('JsonValidationRule', $enabledRules)) {
+			$rules[] = new JsonValidationRule();
+		}
+
+		if (empty($rules)) {
+			$output->error('No rule enabled!');
+			return 1;
 		}
 
 		// Get Folders

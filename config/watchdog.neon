@@ -1,6 +1,8 @@
 parameters:
-	services:
-		- JsonValidationRule
+	enabledRules:
+		- JsonValidationRule1
+	includes:
+		- tests
 	excludes:
 		- .idea
 		- .git
