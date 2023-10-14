@@ -1,7 +1,6 @@
 parameters:
-	includes:
-		- tests
-		- tests2
+	services:
+		- JsonValidationRule
 	excludes:
 		- .idea
 		- .git
@@ -11,3 +10,4 @@ parameters:
 		- temp
 		- vendor
 		- app2
+		- app3

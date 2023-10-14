@@ -4,7 +4,8 @@ namespace Clown\Watchdog\Command;
 
 use Nette\Neon\Neon;
 use Nette\Utils\Finder;
-use Clown\Watchdog\Rules\RuleJson;
+use Clown\Watchdog\Rules\RuleInterface;
+use Clown\Watchdog\Rules\JsonValidationRule;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -25,7 +26,7 @@ class AnalyseCommand extends Command
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
 		// Nadefinuje pravidla
-		$rules = [new RuleJson()];
+		$rules[] = new JsonValidationRule();
 		$output = new SymfonyStyle($input, $output);
 		$output->title('Watchdog');
 
@@ -55,7 +56,12 @@ class AnalyseCommand extends Command
 		}
 
 		// Analyse Folders
-		$this->analyseFolders($paths, $rules, $output, $excludes);
+		$totalErrors  = $this->analyseFolders($paths, $rules, $output, $excludes);
+
+		if ($totalErrors > 0) {
+			$output->error('Analysis found ' . $totalErrors . ' errors!');
+			return 1;
+		}
 
 		$output->success('Successfully analysed');
 		return 0;
@@ -78,8 +84,10 @@ class AnalyseCommand extends Command
 		return $paths;
 	}
 
-	private function analyseFolders(array $paths, array $rules, SymfonyStyle $output, array $excludes): void
+	private function analyseFolders(array $paths, array $rules, SymfonyStyle $output, array $excludes): int
 	{
+		$totalErrors = 0;
+
 		$output->writeln('Analyzing folders:');
 		foreach ($paths as $path) {
 			$output->writeln(" - " . $path);
@@ -100,16 +108,34 @@ class AnalyseCommand extends Command
 			foreach ($finder as $file) {
 				$matchedRules = $this->matchRules($file, $rules);
 				$fileViolations = $this->analyseFile($file, $matchedRules);
-				$output->writeln('<info>' . $file . ' ✔ </info>');
+
+				if (!empty($fileViolations)) {
+					$totalErrors += count($fileViolations);
+					foreach ($fileViolations as $violation) {
+
+					}
+					$output->writeln('<error>' . $file . ' ✘ ' . $violation . '</error>');
+				} else {
+					$output->writeln('<info>' . $file . ' ✔ </info>');
+				}
 			}
 		}
+
+		return $totalErrors;
 	}
 
 	private function matchRules($file, array $rules): array
 	{
 		$matchedRules = [];
 		foreach ($rules as $rule) {
-			// Logic to match rules goes here
+			if ($rule instanceof RuleInterface) {
+				foreach ($rule->getPathPatterns() as $pattern) {
+					if (preg_match($pattern, $file->getFilename())) {
+						$matchedRules[] = $rule;
+						break; // Pokud soubor odpovídá vzoru, přidáme pravidlo a přejdeme na další pravidlo
+					}
+				}
+			}
 		}
 		return $matchedRules;
 	}
