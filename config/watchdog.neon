@@ -1,6 +1,6 @@
 parameters:
 	enabledRules:
-		- JsonValidationRule1
+		- JsonValidationRule
 	includes:
 		- tests
 	excludes:

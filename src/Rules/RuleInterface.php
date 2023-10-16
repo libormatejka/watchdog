@@ -8,9 +8,6 @@ interface RuleInterface
 {
 
 	public function getPathPatterns(): array;
-
-
-	//array vraci seznam chyb...
 	public function processFile(SplFileInfo $file): array;
 
 }

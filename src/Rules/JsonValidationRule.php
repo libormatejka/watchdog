@@ -20,10 +20,9 @@ class JsonValidationRule implements RuleInterface
         $violations = [];
         $fileContent = file_get_contents($file->getPathname());
 
-        // Kontrola, zda má soubor validní JSON strukturu
         json_decode($fileContent);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $violations[] = "Soubor nemá validní JSON strukturu: " . json_last_error_msg();
+            $violations[] = "The file does not have a valid JSON structure: " . json_last_error_msg();
         }
 
         return $violations;

@@ -24,79 +24,66 @@ class AnalyseCommand extends Command
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $output = new SymfonyStyle($input, $output);
+        $output->title('Watchdog');
+
+        $config = $this->loadConfig($input, $output);
+        $rules = $this->initializeRules($config['enabledRules']);
+
+        if (empty($rules)) {
+            $output->error('No rule enabled!');
+            return 1;
+        }
+
+        list($totalErrors, $errorFiles) = $this->analyseFolders($output, $rules, $config);
+
+        if ($totalErrors > 0) {
+            $output->section('List of files with errors:');
+            foreach ($errorFiles as $filePath => $violations) {
+                $output->writeln('<error>File: ' . $filePath . '</error>');
+                foreach ($violations as $violation) {
+                    $output->writeln(' - ' . $violation);
+                }
+            }
+            $output->error('Analysis found ' . $totalErrors . ' errors!');
+            return 1;
+        }
+
+        $output->success('Successfully analysed');
+        return 0;
+    }
+
+	private function getPaths(SymfonyStyle $output, array $config): array
+    {
+		$paths = $config['includes'];
+
+        while (empty($paths) || $paths[0] === NULL || trim($paths[0]) === '') {
+            $inputPath = $output->ask('Please enter the path to the directory you want to analyse');
+
+            if ($inputPath !== null) {
+                $paths = explode(' ', $inputPath);
+            } else {
+                $paths = [null];
+            }
+        }
+
+        $paths = array_diff($paths, $config['excludes']);
+
+        return $paths;
+    }
+
+	private function analyseFolders(SymfonyStyle $output, array $rules, array $config): array
 	{
-		$output = new SymfonyStyle($input, $output);
-		$output->title('Watchdog');
-
-		// Config
-		$configPath = (string) $input->getOption('config');
-		if ($configPath) {
-			$output->writeln('Using config file: ' . $configPath);
-			$config = Neon::decode(file_get_contents($configPath));
-			$includes = $config['parameters']['includes'] ?? [];
-			$excludes = $config['parameters']['excludes'] ?? [];
-			$enabledRules = $config['parameters']['enabledRules'] ?? [];
-		}
-
-		// Nadefinuje pravidla
-		$rules = [];
-		if (in_array('JsonValidationRule', $enabledRules)) {
-			$rules[] = new JsonValidationRule();
-		}
-
-		if (empty($rules)) {
-			$output->error('No rule enabled!');
-			return 1;
-		}
-
-		// Get Folders
-		$paths = $this->getPaths($input, $output);
-
-		// Add included folders
-		$paths = array_merge($paths, $includes);
-
-		// Remove excluded folders from paths
-		if (!empty($excludes)) {
-			$paths = array_diff($paths, $excludes);
-		}
+		$paths = $this->getPaths($output, $config);
 
 		if (!$paths) {
-			$output->error('Folder is not specified!');
-			return 1;
-		}
+            $output->error('Folder is not specified!');
+            return [1, []];
+        }
 
-		// Analyse Folders
-		$totalErrors  = $this->analyseFolders($paths, $rules, $output, $excludes);
-
-		if ($totalErrors > 0) {
-			$output->error('Analysis found ' . $totalErrors . ' errors!');
-			return 1;
-		}
-
-		$output->success('Successfully analysed');
-		return 0;
-	}
-
-	private function getPaths(InputInterface $input, SymfonyStyle $output): array
-	{
-		$paths = (array) $input->getArgument('path');
-
-		while (empty($paths) || $paths[0] === NULL || trim($paths[0]) === '') {
-			$inputPath = $output->ask('Please enter the path to the directory you want to analyse');
-
-			if ($inputPath !== null) {
-				$paths = explode(' ', $inputPath);
-			} else {
-				$paths = [null];
-			}
-		}
-
-		return $paths;
-	}
-
-	private function analyseFolders(array $paths, array $rules, SymfonyStyle $output, array $excludes): int
-	{
 		$totalErrors = 0;
+		$errorFiles = [];
 
 		$output->writeln('Analyzing folders:');
 		foreach ($paths as $path) {
@@ -112,8 +99,9 @@ class AnalyseCommand extends Command
 
 			$finder = Finder::findFiles()
 				->from($path)
-				->exclude($excludes);
-			$output->section("Folder: " . $path . " (" . $finder->count() . " files)");
+				->exclude($config["excludes"]);
+
+			$output->section("Folder: " . $path . " (" . iterator_count($finder->getIterator()) . " files)");
 
 			foreach ($finder as $file) {
 				$matchedRules = $this->matchRules($file, $rules);
@@ -121,17 +109,18 @@ class AnalyseCommand extends Command
 
 				if (!empty($fileViolations)) {
 					$totalErrors += count($fileViolations);
+					$errorFiles[$file->getRealPath()] = $fileViolations;
 					foreach ($fileViolations as $violation) {
 
 					}
-					$output->writeln('<error>' . $file . ' ✘ ' . $violation . '</error>');
+					$output->writeln('<error>' . $file . ' ✘ </error>');
 				} else {
 					$output->writeln('<info>' . $file . ' ✔ </info>');
 				}
 			}
 		}
 
-		return $totalErrors;
+		return [$totalErrors, $errorFiles];
 	}
 
 	private function matchRules($file, array $rules): array
@@ -158,5 +147,32 @@ class AnalyseCommand extends Command
 		}
 		return $fileViolations;
 	}
+
+	private function loadConfig(InputInterface $input, SymfonyStyle $output): array
+    {
+        $config = [
+            'includes' => [],
+            'excludes' => [],
+            'enabledRules' => []
+        ];
+
+        $configPath = (string) $input->getOption('config');
+        if ($configPath) {
+            $output->writeln('Using config file: ' . $configPath);
+            $loadedConfig = Neon::decode(file_get_contents($configPath));
+            $config = array_merge($config, $loadedConfig['parameters']);
+        }
+
+        return $config;
+    }
+
+	private function initializeRules(array $enabledRules): array
+    {
+        $rules = [];
+        if (in_array('JsonValidationRule', $enabledRules)) {
+            $rules[] = new JsonValidationRule();
+        }
+        return $rules;
+    }
 
 }
