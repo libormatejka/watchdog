@@ -2,7 +2,8 @@ parameters:
 	enabledRules:
 		- JsonValidationRule
 	includes:
-		- tests
+		- test
+		- test2
 	excludes:
 		- .idea
 		- .git
