@@ -6,10 +6,11 @@ use SplFileInfo;
 
 class JsonValidationRule implements RuleInterface
 {
-	//kontroluje typ souboru...
+	/*
+	* Checks the file type
+	*/
 	public function getPathPatterns(): array
 	{
-		// Vrátí vzor pro všechny soubory s příponou .json
         return [
             '#\.json$#'
         ];

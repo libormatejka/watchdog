@@ -7,6 +7,7 @@ use Nette\Utils\Finder;
 use Clown\Watchdog\Rules\RuleInterface;
 use Clown\Watchdog\Rules\JsonValidationRule;
 use Symfony\Component\Console\Command\Command;
+use Clown\Watchdog\Rules\JsonSizeValidationRule;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,6 +31,8 @@ class AnalyseCommand extends Command
 
         $config = $this->loadConfig($input, $output);
         $rules = $this->initializeRules($config['enabledRules']);
+
+		$output->warning("Rules:");
 
         if (empty($rules)) {
             $output->error('No rule enabled!');
@@ -93,7 +96,7 @@ class AnalyseCommand extends Command
 		foreach ($paths as $path) {
 
 			if (!is_dir($path)) {
-				$output->error('Folder ' . $path . ' not exists! Skipping...');
+				$output->warning('Folder ' . $path . ' not exists! Skipping...');
 				continue;
 			}
 
@@ -143,7 +146,8 @@ class AnalyseCommand extends Command
 	{
 		$fileViolations = [];
 		foreach ($matchedRules as $rule) {
-			$fileViolations = $fileViolations + $rule->processFile($file);
+			$violationsFromRule = $rule->processFile($file);
+			$fileViolations = array_merge($fileViolations, $violationsFromRule);
 		}
 		return $fileViolations;
 	}
@@ -169,9 +173,12 @@ class AnalyseCommand extends Command
 	private function initializeRules(array $enabledRules): array
     {
         $rules = [];
-        if (in_array('JsonValidationRule', $enabledRules)) {
-            $rules[] = new JsonValidationRule();
-        }
+        foreach ($enabledRules as $ruleName) {
+			$fullyQualifiedClassName = "Clown\\Watchdog\\Rules\\" . $ruleName;
+			if (class_exists($fullyQualifiedClassName) && is_subclass_of($fullyQualifiedClassName, RuleInterface::class)) {
+				$rules[] = new $fullyQualifiedClassName();
+			}
+		}
         return $rules;
     }
 

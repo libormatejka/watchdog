@@ -1,9 +1,11 @@
 parameters:
 	enabledRules:
 		- JsonValidationRule
+		- JsonSizeValidationRule
 	includes:
 		- test
 		- test2
+	maxFileSize: 1048576 # 1 MB
 	excludes:
 		- .idea
 		- .git
