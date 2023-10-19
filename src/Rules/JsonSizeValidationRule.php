@@ -6,11 +6,11 @@ use SplFileInfo;
 
 class JsonSizeValidationRule implements RuleInterface
 {
-	private $maxSize; // v bytech
+	private $config;
 
-    public function __construct(int $maxSize)
+    public function __construct(array $config)
     {
-        $this->maxSize = $maxSize;
+        $this->config = $config;
     }
 
 	/*
@@ -25,9 +25,15 @@ class JsonSizeValidationRule implements RuleInterface
 
 	public function processFile(SplFileInfo $file): array
     {
+		$maxFileSize = $this->config["maxFileSize"];
+		$emptyFile = $this->config["emptyFile"];
+
         $violations = [];
-        if ($file->getSize() > $this->maxSize) {
-            $violations[] = "The file " . $file->getFilename() . " exceeds the allowed size of " . $this->formatBytes($this->maxSize) . ".";
+		if( $emptyFile === true && $file->getSize() === 0 ){
+			$violations[] = "The file " . $file->getFilename() . " is empty";
+		}
+        if ( $file->getSize() > $maxFileSize ) {
+            $violations[] = "The file " . $file->getFilename() . " exceeds the allowed size of " . $this->formatBytes( $maxFileSize ) . ".";
         }
         return $violations;
     }

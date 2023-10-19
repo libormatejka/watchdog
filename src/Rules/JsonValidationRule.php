@@ -6,6 +6,13 @@ use SplFileInfo;
 
 class JsonValidationRule implements RuleInterface
 {
+	private $config;
+
+    public function __construct(array $config)
+    {
+        $this->config = $config;
+    }
+
 	/*
 	* Checks the file type
 	*/

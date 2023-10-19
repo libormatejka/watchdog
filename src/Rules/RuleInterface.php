@@ -6,7 +6,7 @@ use SplFileInfo;
 
 interface RuleInterface
 {
-
+	public function __construct(array $config);
 	public function getPathPatterns(): array;
 	public function processFile(SplFileInfo $file): array;
 

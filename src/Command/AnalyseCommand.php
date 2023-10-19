@@ -30,7 +30,7 @@ class AnalyseCommand extends Command
         $output->title('Watchdog');
 
         $config = $this->loadConfig($input, $output);
-        $rules = $this->initializeRules($config['enabledRules']);
+        $rules = $this->initializeRules($config);
 
 		$output->warning("Rules:");
 
@@ -170,16 +170,16 @@ class AnalyseCommand extends Command
         return $config;
     }
 
-	private function initializeRules(array $enabledRules): array
+	private function initializeRules(array $config): array
     {
         $rules = [];
+		$enabledRules = $config['enabledRules'];
         foreach ($enabledRules as $ruleName) {
 			$fullyQualifiedClassName = "Clown\\Watchdog\\Rules\\" . $ruleName;
 			if (class_exists($fullyQualifiedClassName) && is_subclass_of($fullyQualifiedClassName, RuleInterface::class)) {
-				$rules[] = new $fullyQualifiedClassName();
+				$rules[] = new $fullyQualifiedClassName($config);
 			}
 		}
         return $rules;
     }
-
 }
