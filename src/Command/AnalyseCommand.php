@@ -49,7 +49,7 @@ class AnalyseCommand extends Command
                     $output->writeln(' - ' . $violation);
                 }
             }
-            $output->error('Analysis found ' . $totalErrors . ' errors!');
+            $output->error('Analysis found ' . $totalErrors . ' error(s) in ' .  count($errorFiles) . ' file(s)!');
             return 1;
         }
 
