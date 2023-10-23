@@ -5,9 +5,7 @@ namespace Clown\Watchdog\Command;
 use Nette\Neon\Neon;
 use Nette\Utils\Finder;
 use Clown\Watchdog\Rules\RuleInterface;
-use Clown\Watchdog\Rules\JsonValidationRule;
 use Symfony\Component\Console\Command\Command;
-use Clown\Watchdog\Rules\JsonSizeValidationRule;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
@@ -32,7 +30,12 @@ class AnalyseCommand extends Command
         $config = $this->loadConfig($input, $output);
         $rules = $this->initializeRules($config);
 
-		$output->warning("Rules:");
+		$output->writeln('<fg=green;bg=magenta;options=underscore,bold>Enabled rules:</>');
+
+		foreach( $rules as $rule ){
+			$output->writeln('<fg=magenta;options=bold> - ' . $rule["name"] . ' </>');
+		}
+
 
         if (empty($rules)) {
             $output->error('No rule enabled!');
@@ -59,7 +62,7 @@ class AnalyseCommand extends Command
 
 	private function getPaths(SymfonyStyle $output, array $config): array
     {
-		$paths = $config['includes'];
+		$paths = $config["parameters"]['includesFolders'];
 
         while (empty($paths) || $paths[0] === NULL || trim($paths[0]) === '') {
             $inputPath = $output->ask('Please enter the path to the directory you want to analyse');
@@ -71,7 +74,7 @@ class AnalyseCommand extends Command
             }
         }
 
-        $paths = array_diff($paths, $config['excludes']);
+        $paths = array_diff($paths, $config["parameters"]['excludesFolders']);
 
         return $paths;
     }
@@ -88,9 +91,10 @@ class AnalyseCommand extends Command
 		$totalErrors = 0;
 		$errorFiles = [];
 
-		$output->writeln('Analyzing folders:');
+		$output->writeln('<bg=magenta;options=underscore,bold></>');
+		$output->writeln('<bg=magenta;options=underscore,bold>Analyzing folders:</>');
 		foreach ($paths as $path) {
-			$output->writeln(" - " . $path);
+			$output->writeln("<fg=magenta;options=bold> - ". $path ." </>");
 		}
 
 		foreach ($paths as $path) {
@@ -102,11 +106,19 @@ class AnalyseCommand extends Command
 
 			$finder = Finder::findFiles()
 				->from($path)
-				->exclude($config["excludes"]);
+				->exclude($config["parameters"]["excludesFolders"]);
 
 			$output->section("Folder: " . $path . " (" . iterator_count($finder->getIterator()) . " files)");
 
 			foreach ($finder as $file) {
+
+				$fileExtension = $file->getExtension();
+
+				// Kontrola, zda je typ souboru na seznamu povolených
+				if (!in_array($fileExtension, $config['parameters']['includesFilesType'], true)) {
+					continue;
+				}
+
 				$matchedRules = $this->matchRules($file, $rules);
 				$fileViolations = $this->analyseFile($file, $matchedRules);
 
@@ -130,11 +142,11 @@ class AnalyseCommand extends Command
 	{
 		$matchedRules = [];
 		foreach ($rules as $rule) {
-			if ($rule instanceof RuleInterface) {
-				foreach ($rule->getPathPatterns() as $pattern) {
+			if ($rule["object"] instanceof RuleInterface) {
+				foreach ($rule["object"]->getPathPatterns() as $pattern) {
 					if (preg_match($pattern, $file->getFilename())) {
-						$matchedRules[] = $rule;
-						break; // Pokud soubor odpovídá vzoru, přidáme pravidlo a přejdeme na další pravidlo
+						$matchedRules[] = $rule["object"];
+						break;
 					}
 				}
 			}
@@ -162,9 +174,9 @@ class AnalyseCommand extends Command
 
         $configPath = (string) $input->getOption('config');
         if ($configPath) {
-            $output->writeln('Using config file: ' . $configPath);
+            $output->writeln("<fg=yellow;options=bold>Using config file: ". $configPath ." </>");
             $loadedConfig = Neon::decode(file_get_contents($configPath));
-            $config = array_merge($config, $loadedConfig['parameters']);
+            $config = array_merge($config, $loadedConfig);
         }
 
         return $config;
@@ -173,13 +185,17 @@ class AnalyseCommand extends Command
 	private function initializeRules(array $config): array
     {
         $rules = [];
-		$enabledRules = $config['enabledRules'];
+		$enabledRules = $config["parameters"]['enabledRules'];
         foreach ($enabledRules as $ruleName) {
 			$fullyQualifiedClassName = "Clown\\Watchdog\\Rules\\" . $ruleName;
 			if (class_exists($fullyQualifiedClassName) && is_subclass_of($fullyQualifiedClassName, RuleInterface::class)) {
-				$rules[] = new $fullyQualifiedClassName($config);
+				$subRule = [];
+				$subRule["name"] = $ruleName;
+				$subRule["object"] = new $fullyQualifiedClassName($config);
+				$rules[] = $subRule;
 			}
 		}
+
         return $rules;
     }
 }

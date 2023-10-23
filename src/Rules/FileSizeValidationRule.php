@@ -4,7 +4,7 @@ namespace Clown\Watchdog\Rules;
 
 use SplFileInfo;
 
-class JsonSizeValidationRule implements RuleInterface
+class FileSizeValidationRule implements RuleInterface
 {
 	private $config;
 
@@ -13,23 +13,29 @@ class JsonSizeValidationRule implements RuleInterface
         $this->config = $config;
     }
 
-	/*
-	* Checks the file type
-	*/
 	public function getPathPatterns(): array
 	{
-        return [
-            '#\.json$#'
-        ];
+		$fileTypes = $this->config["parameters"]["includesFilesType"];
+		$patterns = [];
+		foreach ($fileTypes as $fileType) {
+			$patterns[] = '#\.' . $fileType . '$#';
+		}
+		return $patterns;
 	}
 
 	public function processFile(SplFileInfo $file): array
     {
-		$maxFileSize = $this->config["maxFileSize"];
-		$emptyFile = $this->config["emptyFile"];
+		$fileType = $file->getExtension();
+		$maxFileSize = $this->config["parameters"]["fileSettings"]["maxFileSize"]; // Default value
+
+		// Check if there's a specific max file size for this file type in the config
+		if (isset($this->config["fileTypeRules"][$fileType]["maxFileSize"])) {
+			$maxFileSize = $this->config["fileTypeRules"][$fileType]["maxFileSize"];
+		}
+		var_dump( $fileType . " ----------- " .$maxFileSize );
 
         $violations = [];
-		if( $emptyFile === true && $file->getSize() === 0 ){
+		if( $file->getSize() === 0 ){
 			$violations[] = "The file " . $file->getFilename() . " is empty";
 		}
         if ( $file->getSize() > $maxFileSize ) {

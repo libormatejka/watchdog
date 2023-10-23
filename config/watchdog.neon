@@ -1,12 +1,13 @@
+# General Rules
 parameters:
 	enabledRules:
 		- JsonValidationRule
-		- JsonSizeValidationRule
-	includes:
+		- XmlValidationRule
+		- FileSizeValidationRule
+		- YamlValidationRule
+	includesFolders:
 		- test
-	maxFileSize: 1048576 # 1 MB
-	emptyFile: true
-	excludes:
+	excludesFolders:
 		- .idea
 		- .git
 		- .docker
@@ -16,3 +17,19 @@ parameters:
 		- vendor
 		- app2
 		- app3
+	includesFilesType:
+		- neon
+		- json
+		- yaml
+		- xml
+	fileSettings:
+		minFilesSize: 10
+		maxFileSize: 512000
+
+# File Type Rules (Optional fields)
+fileTypeRules:
+	json:
+		minFilesSize: 10
+		maxFileSize: 10
+	yaml:
+		maxFileSize: 20
