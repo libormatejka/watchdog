@@ -4,13 +4,14 @@ namespace Clown\Watchdog\Rules;
 
 use SplFileInfo;
 use Symfony\Component\Yaml\Yaml;
+use Clown\Watchdog\Config\Configuration;
 use Symfony\Component\Yaml\Exception\ParseException;
 
 class YamlValidationRule implements RuleInterface
 {
     private $config;
 
-    public function __construct(array $config)
+    public function __construct(Configuration $config)
     {
         $this->config = $config;
     }

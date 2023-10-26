@@ -3,19 +3,30 @@
 namespace Clown\Watchdog\Rules;
 
 use SplFileInfo;
+use Clown\Watchdog\Config\Configuration;
 
 class FileSizeValidationRule implements RuleInterface
 {
 	private $config;
 
-    public function __construct(array $config)
+	/**
+     * Constructor for the FileSizeValidationRule class.
+     *
+     * @param Configuration $config Configuration settings.
+     */
+    public function __construct(Configuration $config)
     {
         $this->config = $config;
     }
 
+	/**
+     * Returns an array of path patterns for the file types to be validated.
+     *
+     * @return array Array of path patterns.
+     */
 	public function getPathPatterns(): array
 	{
-		$fileTypes = $this->config["parameters"]["includesFilesType"];
+		$fileTypes = $this->config->get("parameters.includesFilesType");
 		$patterns = [];
 		foreach ($fileTypes as $fileType) {
 			$patterns[] = '#\.' . $fileType . '$#';
@@ -23,16 +34,21 @@ class FileSizeValidationRule implements RuleInterface
 		return $patterns;
 	}
 
+	 /**
+     * Processes the given file and returns an array of violations if any.
+     *
+     * @param SplFileInfo $file File to be processed.
+     * @return array Array of violations.
+     */
 	public function processFile(SplFileInfo $file): array
     {
 		$fileType = $file->getExtension();
-		$maxFileSize = $this->config["parameters"]["fileSettings"]["maxFileSize"]; // Default value
+		$maxFileSize = $this->config->get('parameters.fileSettings.maxFileSize'); // Default value
 
-		// Check if there's a specific max file size for this file type in the config
-		if (isset($this->config["fileTypeRules"][$fileType]["maxFileSize"])) {
-			$maxFileSize = $this->config["fileTypeRules"][$fileType]["maxFileSize"];
+		$maxFileTypeSizeValue = $this->config->get('fileTypeRules.' . $fileType . '.maxFileSize');
+		if (null !== $maxFileTypeSizeValue) {
+			$maxFileSize = $maxFileTypeSizeValue;
 		}
-		var_dump( $fileType . " ----------- " .$maxFileSize );
 
         $violations = [];
 		if( $file->getSize() === 0 ){
@@ -44,6 +60,13 @@ class FileSizeValidationRule implements RuleInterface
         return $violations;
     }
 
+	/**
+     * Formats the given bytes into a readable string format.
+     *
+     * @param int $bytes Bytes to be formatted.
+     * @param int $precision Precision for the formatted value.
+     * @return string Formatted bytes string.
+     */
 	private function formatBytes($bytes, $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];

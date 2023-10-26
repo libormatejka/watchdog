@@ -3,12 +3,13 @@
 namespace Clown\Watchdog\Rules;
 
 use SplFileInfo;
+use Clown\Watchdog\Config\Configuration;
 
 class XmlValidationRule implements RuleInterface
 {
     private $config;
 
-    public function __construct(array $config)
+    public function __construct(Configuration $config)
     {
         $this->config = $config;
     }

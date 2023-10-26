@@ -2,6 +2,7 @@
 <?php
 
 use Clown\Watchdog\Application;
+use Symfony\Component\Console\Input\ArgvInput;
 
 $autoloaderInWorkingDirectory = getcwd() . '/vendor/autoload.php';
 if (is_file($autoloaderInWorkingDirectory)) {
@@ -13,5 +14,11 @@ if (is_file($devOrPharAutoloadFile)) {
 	require_once $devOrPharAutoloadFile;
 }
 
-$application = new Application('Watchdog');
+// Parse the input arguments
+$input = new ArgvInput();
+
+// Get the --config option value
+$configPath = $input->getParameterOption('--config');
+
+$application = new Application('Watchdog', '0.0.5', $configPath);
 $application->run();
