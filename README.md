@@ -10,12 +10,12 @@ composer require libormatejka/watchdog
 
 ### Configuration
 
-The watchdog.neon configuration file contains settings for the analysis. You can define:
+The __watchdog.neon configuration file__ contains settings for the analysis. You can define:
 
 ```shell
 parameters:
 	enabledRules:
-		- list of rules...
+		-list of rules...
 	includesFolders:
 		- list of folders...
 	excludesFolders:
@@ -35,4 +35,9 @@ fileTypeRules:
 		maxFileSize: 20
 	etc...
 
+```
+
+### Usage
+```shell
+docker-compose -f .docker/docker-compose.yml run php bin/watchdog analyse --config=PATH TO CONFIG FILE
 ```
